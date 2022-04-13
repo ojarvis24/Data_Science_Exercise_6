@@ -38,6 +38,7 @@ library(gt)            # for creating nice tables
 library(rvest)         # for scraping data
 library(robotstxt)     # for checking if you can scrape data
 library(paletteer)
+library(viridis)
 theme_set(theme_minimal())
 ```
 
@@ -186,11 +187,125 @@ Use the data from the [Macalester Registrar's Fall 2017 Class Schedule](https://
   * General Education Requirements (make sure you only match 762; beware of the Mac copyright banner at the bottom of the page!)
   * Description
 
+```{r}
+fall2017 <- read_html("https://www.macalester.edu/registrar/schedules/2017fall/class-schedule/#crs10008")
+```
+
+```{r}
+course_nums <- 
+  fall2017 %>%
+  html_elements(".class-schedule-course-number") %>%
+  html_text2()
+
+course_names <- 
+  fall2017 %>%
+  html_elements(".class-schedule-course-title") %>%
+  html_text2()
+
+course_days <- 
+  fall2017 %>% 
+  html_elements(".class-schedule-course-title+ .class-schedule-label") %>% 
+  html_text2()
+
+course_time <- 
+  fall2017 %>% 
+  html_elements(".class-schedule-label:nth-child(4)") %>% 
+  html_text2()
+
+course_room <- 
+  fall2017 %>% 
+  html_elements(".class-schedule-label:nth-child(5)") %>% 
+  html_text2()
+
+course_instructor <- 
+  fall2017 %>% 
+  html_elements(".class-schedule-label:nth-child(6)") %>% 
+  html_text2()
+
+course_avail <- 
+  fall2017 %>% 
+  html_elements(".class-schedule-label:nth-child(7)") %>% 
+  html_text2()
+
+course_require <- 
+  fall2017 %>% 
+  html_elements("#content p:nth-child(2)") %>% 
+  html_text2()
+
+course_descrip <- 
+  fall2017 %>% 
+  html_elements(".collapsed p:nth-child(1)") %>% 
+  html_text2()
+```
+
 Then, put all this information into one dataset (tibble or data.frame) Do not include any extraneous information like "Instructor: ".
-  
+
+```{r}
+course_df <- tibble(number=course_nums, 
+                    name=course_names, 
+                    days=course_days, 
+                    time=course_time, 
+                    room=course_room,
+                    instructor=course_instructor, 
+                    avail=course_avail, 
+                    require=course_require, 
+                    descrip=course_descrip)
+```
+
+```{r}
+course_df$days <- gsub("Days: ","",as.character(course_df$days))
+course_df$time <- gsub("Time: ","",as.character(course_df$time))
+course_df$room <- gsub("Room: ","",as.character(course_df$room))
+course_df$instructor <- gsub("Instructor: ","",as.character(course_df$instructor))
+course_df$avail <- gsub("Avail./Max.: ","",as.character(course_df$avail))
+course_df$require <- gsub("General Education Requirements:","",as.character(course_df$require))
+course_df$require <- gsub(" ","",as.character(course_df$require))
+```
 
 7. Create a graph that shows the number of sections offered per department. Hint: The department is a substring of the course number - there are `str_XXX()` functions that can help. Yes, COMP and MATH are the same department, but for this exercise you can just show the results by four letter department code, e.g., with COMP and MATH separate.
 
+
+```{r}
+course_df <- course_df %>% 
+  mutate(department = number) %>% 
+  mutate(department = str_remove_all(department, "[1234567890]")) %>% 
+  mutate(department = str_remove_all(department, "-")) %>% 
+  mutate(department = str_remove_all(department, " ")) %>% 
+  mutate(department = str_replace_all(department, "BIOLL", "BIOL")) %>% 
+  mutate(department = str_replace_all(department, "CHEML", "CHEM")) %>% 
+  mutate(department = str_replace_all(department, "CHINL", "CHIN")) %>% 
+  mutate(department = str_replace_all(department, "CLASL", "CLAS")) %>% 
+  mutate(department = str_replace_all(department, "COMPL", "COMP")) %>% 
+  mutate(department = str_replace_all(department, "ECONL", "ECON")) %>%
+  mutate(department = str_replace_all(department, "EDUCL", "EDUC")) %>% 
+  mutate(department = str_replace_all(department, "ENVIL", "ENVI")) %>% 
+  mutate(department = str_replace_all(department, "FRENL", "FREN")) %>% 
+  mutate(department = str_replace_all(department, "GEOGL", "GEOG")) %>% 
+  mutate(department = str_replace_all(department, "GEOLL", "GEOL")) %>%
+  mutate(department = str_replace_all(department, "GERML", "GERM")) %>%
+  mutate(department = str_replace_all(department, "HISPL", "HISP")) %>%
+  mutate(department = str_replace_all(department, "JAPAL", "JAPA")) %>%
+  mutate(department = str_replace_all(department, "MUSIL", "MUSI")) %>%
+  mutate(department = str_replace_all(department, "MUSIMQ", "MUSI")) %>%
+  mutate(department = str_replace_all(department, "MUSIVM", "MUSI")) %>%
+  mutate(department = str_replace_all(department, "PHYSL", "PHYS")) %>%
+  mutate(department = str_replace_all(department, "PSYCL", "PSYC")) %>%
+  mutate(department = str_replace_all(department, "RUSSL", "RUSS")) %>%
+  mutate(department = str_replace_all(department, "THDAL", "THDA"))
+```
+
+```{r, fig.width=8, fig.height=5}
+course_df %>% 
+  group_by(department) %>% 
+  ggplot(aes(x = department, fill = department)) +
+  geom_bar() +
+  labs(x = "Department", 
+       y = "", 
+       title = "Which department offered the highest number of sections in Fall 2017?") +
+  guides(fill="none") + 
+  theme(panel.grid.major.x = element_blank()) +
+  scale_fill_viridis_d()
+```
 
 8. Analyze the typical length of course names by department. To do so, create a new data table based on your courses data table, with the following changes:
   
