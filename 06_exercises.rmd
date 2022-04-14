@@ -294,7 +294,7 @@ course_df <- course_df %>%
   mutate(department = str_replace_all(department, "THDAL", "THDA"))
 ```
 
-```{r, fig.width=8, fig.height=5}
+```{r, fig.width=15, fig.height=10}
 course_df %>% 
   group_by(department) %>% 
   ggplot(aes(x = department, fill = department)) +
@@ -322,7 +322,7 @@ length <- course_df %>%
   ungroup()
 ```
 
-```{r, fig.width=8, fig.height=5}
+```{r, fig.width=15, fig.height=10}
 title <- length %>%
   group_by(department) %>% 
   summarise(averagetitle = mean(title_length)) %>% 
@@ -354,5 +354,7 @@ descrip <- length %>%
 (title/descrip) + 
   plot_annotation(title = "Differences in Title and Description Length for Classes by Department")
 ```
+
+Github link: https://github.com/ojarvis24/Data_Science_Exercise_6
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
