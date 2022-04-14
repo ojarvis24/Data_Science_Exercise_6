@@ -12,7 +12,7 @@ output:
 
 
 ```{r setup, include=FALSE}
-#knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
+knitr::opts_chunk$set(echo = TRUE, error=TRUE, message=FALSE, warning=FALSE)
 ```
 
 ```{r libraries}
@@ -313,7 +313,46 @@ course_df %>%
   * Remove departments that have fewer than 10 sections of courses. To do so, group by department, then remove observations in groups with fewer than 10 sections (Hint: use filter with n()). Then `ungroup()` the data.  
   * Create a visualization of the differences across groups in lengths of course names or course descriptions. Think carefully about the visualization you should be using!
 
+```{r}
+length <- course_df %>% 
+  mutate(title_length = str_length(name)) %>%
+  mutate(descrip_length = str_length(descrip)) %>% 
+  group_by(department) %>%
+  filter(n()>10) %>% 
+  ungroup()
+```
 
-  
+```{r, fig.width=8, fig.height=5}
+title <- length %>%
+  group_by(department) %>% 
+  summarise(averagetitle = mean(title_length)) %>% 
+  ggplot(aes(y = averagetitle, 
+             x = reorder(department, -averagetitle), 
+             fill = department)) +
+    geom_col() + 
+    labs(x = "Department", 
+       y = "Average Title Length", 
+       title = "Which department has the longest titles for their classes?") + 
+    guides(fill="none") + 
+    theme(panel.grid.major.x = element_blank()) +
+    scale_fill_hue()
+
+descrip <- length %>%
+  group_by(department) %>% 
+  summarise(averagedescrip = mean(descrip_length)) %>% 
+  ggplot(aes(y = averagedescrip, 
+             x = reorder(department, -averagedescrip), 
+             fill = department)) +
+    geom_col() + 
+    labs(x = "Department", 
+       y = "Average Description Length", 
+       title = "Which department has the longest descriptions for their classes?") + 
+    guides(fill="none") + 
+    theme(panel.grid.major.x = element_blank()) +
+    scale_fill_hue()
+
+(title/descrip) + 
+  plot_annotation(title = "Differences in Title and Description Length for Classes by Department")
+```
 
 **DID YOU REMEMBER TO UNCOMMENT THE OPTIONS AT THE TOP?**
